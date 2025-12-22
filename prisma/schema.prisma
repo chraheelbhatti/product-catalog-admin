@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  sku           String   @unique
+  name          String
+  description   String?  @db.Text
+  price         Decimal? @db.Decimal(12, 2)
+  currency      String?  @default("USD")
+  imageUrl      String?
+  category      String?
+  stock         Int?
+  active        Boolean  @default(true)
+
+  // Zee Ordering specific fields
+  brand         String?
+  code          String?
+  itemName      String?
+  supplierName  String?
+  minQty        Int?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([name])
+  @@index([category])
+  @@index([brand])
+}

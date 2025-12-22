@@ -1,0 +1,30 @@
+services:
+  # Database Service
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-product_catalog}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  # Next.js Application Service
+  app:
+    build: .
+    container_name: product-catalog-admin
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    env_file:
+      - .env.production
+    volumes:
+      - ./public:/app/public # Ensures images persist after container updates
+
+volumes:
+  db_data:
