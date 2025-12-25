@@ -1,30 +1,36 @@
 services:
-  # Database Service
-  db:
-    image: postgres:16
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-product_catalog}
-    volumes:
-      - db_data:/var/lib/postgresql/data
-
-  # Next.js Application Service
   app:
     build: .
-    container_name: product-catalog-admin
-    restart: always
     ports:
       - "3000:3000"
-    depends_on:
-      - db
-    env_file:
-      - .env.production
+      - "5555:5555"  # Added to allow browser access to Prisma Studio
+    environment:
+      # Use 'db' when running inside Docker
+      - DATABASE_URL=postgresql://postgres:ZeeReOrder@007@db:5432/product_catalog
+      - NEXTAUTH_SECRET=ZeeReOrderSecretKey123
+      - ADMIN_EMAIL=admin@zeeordering.com
+      - ADMIN_PASSWORD=123
     volumes:
-      - ./public:/app/public # Ensures images persist after container updates
+      - ./public/uploads:/app/public/uploads  # Persists images and fixes upload crashes
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16
+    ports:
+      - "5432:5432"  # Allows local 'npm run dev' to see the database
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=ZeeReOrder@007
+      - POSTGRES_DB=product_catalog
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d product_catalog"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  db_data:
+  postgres_data:

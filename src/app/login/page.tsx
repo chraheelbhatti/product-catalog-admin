@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+// 1. Move the login logic into a sub-component
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
@@ -17,13 +18,13 @@ export default function LoginPage() {
   const [forgotStatus, setForgotStatus] = useState<string | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
 
-async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      console.log("Attempting login..."); // Debug log 1
+      console.log("Attempting login..."); 
 
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -31,9 +32,8 @@ async function onSubmit(e: FormEvent) {
         body: JSON.stringify({ email, password }),
       });
 
-      console.log("Server responded with status:", res.status); // Debug log 2
+      console.log("Server responded with status:", res.status); 
 
-      // 1. Read text first to prevent JSON crashes
       const text = await res.text(); 
       let json: { error?: string } = {};
       
@@ -43,21 +43,18 @@ async function onSubmit(e: FormEvent) {
         console.error("Could not parse server response:", text);
       }
 
-      // 2. Handle Errors
       if (!res.ok) {
         if (res.status === 401) {
           setError("❌ Wrong email or password.");
         } else if (res.status === 500) {
           setError("⚠️ Server Error. Check your terminal for details.");
         } else {
-          // If we have a JSON error, show it. Otherwise show the raw text (truncated)
           setError(json.error || `Error (${res.status}): ${text.slice(0, 50)}`);
         }
         setLoading(false);
         return;
       }
 
-      // 3. Success
       console.log("Login successful, redirecting...");
       router.push(next);
       router.refresh();
@@ -179,5 +176,14 @@ async function onSubmit(e: FormEvent) {
         </form>
       </div>
     </div>
+  );
+}
+
+// 2. Wrap the component in Suspense
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading Zee Ordering...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
